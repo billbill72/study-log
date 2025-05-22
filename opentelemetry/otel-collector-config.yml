@@ -1,0 +1,37 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 10000
+
+exporters:
+  logging:
+    logLevel: debug
+  elasticsearch:
+    endpoints: ["http://elasticsearch:9200"]
+    traces_index: otel-traces
+    logs_index: otel-logs
+    metrics_index: otel-metrics
+
+service:
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ attributes,batch ]
+      exporters: [ elasticsearch ]
+    # metrics:
+    #   # receivers: [ prometheus_simple ]
+    #   receivers: [ otlp ]
+    #   processors: [ batch ]
+    #   exporters: [ elasticsearch ]
+    logs:
+      receivers: [otlp]
+      processors: [ attributes,batch ]
+      exporters: [elasticsearch]
