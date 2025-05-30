@@ -1,0 +1,60 @@
+version: '3.7'
+
+services:
+  postgresql: 
+    image: postgres:${POSTGRESQL_VERSION:-17.5}
+    container_name: workflow_postgresql
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${DB_POSTGRESDB_PASSWORD:?DB_POSTGRESDB_PASSWORD not set}
+      POSTGRES_USER: ${DB_POSTGRESDB_USER:-postgres}
+      POSTGRES_DB: ${DB_POSTGRESDB_DATABASE:-postgres}
+      POSTGRES_SCHEMA: ${DB_POSTGRESDB_SCHEMA:-public}
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - internal
+  n8n: 
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-1.95.1}
+    container_name: workflow_n8n
+    environment:
+      GENERIC_TIMEZONE: ${TIMEZONE:-Asia/Hong_Kong}
+      TZ: ${TIMEZONE:-Asia/Hong_Kong}
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_DATABASE: ${DB_POSTGRESDB_DATABASE:-postgres}
+      DB_POSTGRESDB_HOST: ${DB_POSTGRESDB_HOST:-postgresql}
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_USER: ${DB_POSTGRESDB_USER:-postgres}
+      DB_POSTGRESDB_SCHEMA: ${DB_POSTGRESDB_SCHEMA:-public}
+      DB_POSTGRESDB_PASSWORD: ${DB_POSTGRESDB_PASSWORD?DB_POSTGRESDB_PASSWORD not set}
+      N8N_VERSION_NOTIFICATIONS_ENABLED: ${N8N_VERSION_NOTIFICATIONS_ENABLED:-}
+      N8N_BLOCK_FILE_ACCESS_TO_N8N_FILES: ${N8N_BLOCK_FILE_ACCESS_TO_N8N_FILES:-}
+      N8N_RUNNERS_ENABLED: ${N8N_RUNNERS_ENABLED:-}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: ${N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS:-}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    ports:
+      - 5678:5678
+      - 5679:5679
+    depends_on:
+      - postgresql
+    networks:
+      - internal
+volumes:
+  postgresql_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${WORKFLOW_DATA_VOLUME_PATH}/postgresql_data
+  n8n_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${WORKFLOW_DATA_VOLUME_PATH}/n8n_data
+networks:
+  internal:
+    driver: bridge
